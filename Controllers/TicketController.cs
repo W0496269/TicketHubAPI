@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using TicketHubAPI.Models;
@@ -49,7 +50,11 @@ namespace TicketHubApi.Controllers
                 QueueClient queueClient = new QueueClient(connectionString, queueName);
 
                 string message = JsonSerializer.Serialize(ticket);
-                await queueClient.SendMessageAsync(message);
+
+                // send string message to queue (must encode as base64 to work properly)
+                var plainTextBytes = Encoding.UTF8.GetBytes(message);
+                var base64String = Convert.ToBase64String(plainTextBytes);
+                await queueClient.SendMessageAsync(base64String);
 
                 _logger.LogInformation("Ticket ({ConcertId}) added to Azure tickethub queue", ticket.ConcertId);
                 return Ok($"Ticket ({ticket.ConcertId}) added to Azure tickethub queue");
